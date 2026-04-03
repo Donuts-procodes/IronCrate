@@ -15,5 +15,6 @@ __pycache__/
 
 # --- Environment Variables ---
 .env
+.envfirebase
 .env.example
 .env.local
