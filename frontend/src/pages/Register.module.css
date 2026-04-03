@@ -1,0 +1,119 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  position: relative;
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, #2a2a2a 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.page::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 90% at 50% 50%, transparent 20%, var(--bg) 100%);
+  pointer-events: none;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 32px;
+  animation: fadeUp 0.35s ease forwards;
+}
+
+.header { margin-bottom: 28px; }
+
+.back {
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text2);
+  border: none;
+  padding: 0;
+  margin-bottom: 20px;
+  display: block;
+  transition: color 0.15s;
+}
+.back:hover { color: var(--accent); }
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.sub {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text2);
+  text-transform: uppercase;
+}
+
+.error {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--red);
+}
+
+.btn {
+  background: var(--accent);
+  color: var(--bg);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 12px;
+  border-radius: var(--radius);
+  margin-top: 4px;
+  transition: background 0.15s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn:hover:not(:disabled) { background: var(--accent2); }
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 480px) {
+  .page  { padding: 24px 16px; align-items: stretch; }
+  .card  { padding: 24px 20px; border-radius: 6px; }
+  .title { font-size: 18px; }
+}
