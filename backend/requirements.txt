@@ -5,3 +5,5 @@ pyrebase4>=4.8.0
 web3>=6.15.0
 opencv-python>=4.9.0
 numpy>=1.26.0
+cloudinary>=1.36.0
+pyotp>=2.9.0
