@@ -13,15 +13,27 @@ export default function Navbar() {
 
   return (
     <nav className={styles.nav}>
-      <span className={styles.logo}>IRON<span className={styles.crate}>CRATE</span></span>
+      <span className={styles.brand}>
+        IRON<span className={styles.accent}>CRATE</span>
+      </span>
+
       <div className={styles.links}>
-        <NavLink to="/dashboard"  className={({ isActive }) => isActive ? styles.active : ''}>Dashboard</NavLink>
-        <NavLink to="/record"     className={({ isActive }) => isActive ? styles.active : ''}>Record</NavLink>
-        <NavLink to="/incidents"  className={({ isActive }) => isActive ? styles.active : ''}>Incidents</NavLink>
+        <NavLink to="/dashboard" className={({ isActive }) => isActive ? styles.active : ''}>
+          Dashboard
+        </NavLink>
+        <NavLink to="/record" className={({ isActive }) => isActive ? styles.active : ''}>
+          Record
+        </NavLink>
+        <NavLink to="/incidents" className={({ isActive }) => isActive ? styles.active : ''}>
+          Incidents
+        </NavLink>
       </div>
+
       <div className={styles.right}>
-        <span className={styles.vehicle}>{user?.vehicle_number}</span>
-        <button onClick={handleLogout} className={styles.logout}>Logout</button>
+        {user && (
+          <span className={styles.vehicle}>{user.vehicle_number}</span>
+        )}
+        <button className={styles.logout} onClick={handleLogout}>Logout</button>
       </div>
     </nav>
   )

@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 /// @title  IronCrateRegistry
 /// @notice Immutable on-chain log of vehicular incident video hashes.
+/// @dev    Deploy on Polygon Amoy testnet. Paste address into backend/.env
 contract IronCrateRegistry {
 
     event IncidentLogged(

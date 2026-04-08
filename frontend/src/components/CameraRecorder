@@ -1,0 +1,256 @@
+import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
+
+export default function CameraRecorder() {
+  const videoRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  
+  const [facingMode, setFacingMode] = useState("environment"); // "environment" = back, "user" = front
+  const [location, setLocation] = useState(null);
+  const [error, setError] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
+
+  // 1. Force Location Access on mount
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser.");
+      return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+        setError(""); // Clear errors if granted
+      },
+      (err) => {
+        setError("Location access is required to record incidents. Please enable it in your settings.");
+      }
+    );
+  }, []);
+
+  // 2. Initialize Camera based on facingMode
+  useEffect(() => {
+    let stream = null;
+
+    const startCamera = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facingMode },
+          audio: true 
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err) {
+        setError("Camera access denied or device unavailable.");
+      }
+    };
+
+    // Only start camera if location is granted (optional, but enforces your rule)
+    if (location) {
+      startCamera();
+    }
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [facingMode, location]);
+
+  const toggleCamera = () => {
+    setFacingMode(prev => prev === "environment" ? "user" : "environment");
+  };
+
+  const handleStartRecording = () => {
+    const stream = videoRef.current.srcObject;
+    if (!stream) return;
+
+    let chunks = [];
+    // MediaRecorder captures the stream
+    const mediaRecorder = new MediaRecorder(stream);
+    
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        chunks.push(e.data);
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'video/webm' }); // Browsers record in webm
+      uploadVideo(blob);
+    };
+
+    mediaRecorderRef.current = mediaRecorder;
+    mediaRecorder.start();
+    setIsRecording(true);
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const uploadVideo = async (videoBlob) => {
+    setUploadStatus("Uploading directly to Cloudinary...");
+    const formData = new FormData();
+    formData.append("video", videoBlob, "incident_video.webm");
+    
+    // Optional: Send location data to backend too
+    formData.append("latitude", location.lat);
+    formData.append("longitude", location.lng);
+
+    try {
+      const response = await axios.post('/api/incidents/upload-video', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      setUploadStatus(`Success! Video saved at: ${response.data.url}`);
+    } catch (err) {
+      setUploadStatus("Upload failed. Check console.");
+      console.error(err);
+    }
+  };
+
+  return (
+    <div style={styles.container}>
+      <h2 style={styles.header}>Incident Recorder</h2>
+      
+      {error ? (
+        <div style={styles.errorBox}>{error}</div>
+      ) : (
+        <div style={styles.cameraWrapper}>
+          {/* playsInline is CRITICAL for iOS Safari to stop it from going fullscreen */}
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            muted 
+            style={styles.video} 
+          />
+          
+          {location && (
+            <div style={styles.locationTag}>
+              GPS: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+            </div>
+          )}
+
+          <div style={styles.controls}>
+            <button style={styles.switchBtn} onClick={toggleCamera} disabled={isRecording}>
+              Switch Camera
+            </button>
+            
+            {!isRecording ? (
+              <button style={styles.recordBtn} onClick={handleStartRecording}>
+                Start Recording
+              </button>
+            ) : (
+              <button style={styles.stopBtn} onClick={handleStopRecording}>
+                Stop Recording
+              </button>
+            )}
+          </div>
+          
+          {uploadStatus && <p style={styles.status}>{uploadStatus}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const styles = {
+  container: {
+    backgroundColor: '#0f172a',
+    minHeight: '100vh',
+    color: '#fff',
+    fontFamily: "'Syne', sans-serif",
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '20px'
+  },
+  header: {
+    color: '#38bdf8',
+    marginBottom: '20px'
+  },
+  errorBox: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    color: '#ef4444',
+    padding: '20px',
+    borderRadius: '8px',
+    border: '1px solid #ef4444',
+    maxWidth: '400px',
+    textAlign: 'center'
+  },
+  cameraWrapper: {
+    position: 'relative',
+    width: '100%',
+    maxWidth: '500px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px'
+  },
+  video: {
+    width: '100%',
+    borderRadius: '12px',
+    backgroundColor: '#000',
+    border: '2px solid #334155'
+  },
+  locationTag: {
+    position: 'absolute',
+    top: '10px',
+    left: '10px',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: '5px 10px',
+    borderRadius: '6px',
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: '0.8rem',
+    color: '#4ade80'
+  },
+  controls: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: '10px'
+  },
+  switchBtn: {
+    flex: 1,
+    padding: '12px',
+    backgroundColor: '#334155',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+  },
+  recordBtn: {
+    flex: 2,
+    padding: '12px',
+    backgroundColor: '#ef4444',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+  },
+  stopBtn: {
+    flex: 2,
+    padding: '12px',
+    backgroundColor: '#94a3b8',
+    color: '#0f172a',
+    border: 'none',
+    borderRadius: '8px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+  },
+  status: {
+    textAlign: 'center',
+    color: '#cbd5e1',
+    marginTop: '10px',
+    fontSize: '0.9rem'
+  }
+};

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import api from '../api'
 
 const AuthContext = createContext(null)
@@ -20,9 +20,9 @@ export function AuthProvider({ children }) {
     return r.data
   }
 
-  const register = async (data) => {
-    const r = await api.post('/auth/register', data)
-    setUser({ ...data, uid: r.data.uid })
+  const register = async (form) => {
+    const r = await api.post('/auth/register', form)
+    setUser({ vehicle_number: form.vehicle_number, owner_name: form.owner_name })
     return r.data
   }
 
@@ -38,4 +38,6 @@ export function AuthProvider({ children }) {
   )
 }
 
-export const useAuth = () => useContext(AuthContext)
+export function useAuth() {
+  return useContext(AuthContext)
+}

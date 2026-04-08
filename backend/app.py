@@ -1,31 +1,33 @@
-"""
-IronCrate - Secure Dashcam Backend
-"""
 import os
+import cloudinary
 from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Force load .env from the backend directory
+basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '.env'))
 
-# Initialize Flask
-app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET", "super-secret-key")
+# Configure Cloudinary once at startup
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+)
 
-# Enable CORS for the React frontend
-CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
-
-# Register Blueprints (Routes)
+# Import blueprints AFTER env is loaded
 from routes.auth import auth_bp
 from routes.incidents import incidents_bp
+from routes.session import session_bp
 
-app.register_blueprint(auth_bp, url_prefix="/api/auth")
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET", "ironcrate-dev-secret")
+
+CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
+
+app.register_blueprint(auth_bp,      url_prefix="/api/auth")
 app.register_blueprint(incidents_bp, url_prefix="/api/incidents")
-
-@app.get("/api/health")
-def health():
-    return {"status": "IronCrate Secure Backend Active"}
+app.register_blueprint(session_bp,   url_prefix="/api/session")
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)

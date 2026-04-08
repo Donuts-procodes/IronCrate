@@ -8,92 +8,106 @@ export default function Incidents() {
   const [expanded,  setExpanded]  = useState(null)
 
   useEffect(() => {
-    api.get('/incidents/')
-      .then(r => setIncidents(r.data))
+    api.get('/incidents/list')
+      .then(r => setIncidents(r.data.reverse()))   // newest first
       .catch(() => setIncidents([]))
       .finally(() => setLoading(false))
   }, [])
 
-  const toggle = (i) => setExpanded(expanded === i ? null : i)
+  const toggle = (id) => setExpanded(e => e === id ? null : id)
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>INCIDENT LOG</h1>
-        <span className={`${styles.count} mono`}>{incidents.length} RECORDS</span>
+      <div className={styles.header + ' fade-up'}>
+        <h1 className={styles.title}>Incident Log</h1>
+        <p className={styles.sub}>{incidents.length} record{incidents.length !== 1 ? 's' : ''} on file</p>
       </div>
 
-      {loading && <p className={styles.empty}>Loading…</p>}
+      {loading && <p className={styles.muted}>Loading…</p>}
+
       {!loading && incidents.length === 0 && (
-        <p className={styles.empty}>No incidents recorded yet.</p>
+        <div className={styles.empty}>
+          <p>No incidents recorded yet.</p>
+        </div>
       )}
 
-      <div className={styles.list}>
-        {incidents.map((inc, i) => (
-          <div key={i} className={styles.card} onClick={() => toggle(i)}>
+      <div className={styles.list + ' fade-up'}>
+        {incidents.map((inc, i) => {
+          const id   = inc.id || inc.incident_id || i
+          const ts   = inc.metadata?.timestamp || inc.timestamp
+          const date = ts ? new Date(ts * 1000).toLocaleString() : '—'
+          const open = expanded === id
 
-            {/* Row summary */}
-            <div className={styles.row}>
-              <div className={styles.rowLeft}>
-                <span className={`${styles.dot} ${inc.blockchain_status === 'anchored' ? styles.green : styles.orange}`} />
+          return (
+            <div key={id} className={styles.card}>
+              <div className={styles.cardHead} onClick={() => toggle(id)}>
                 <div>
-                  <p className={`${styles.hash} mono`}>{inc.video_hash?.slice(0, 32)}…</p>
-                  <p className={`${styles.time} mono`}>
-                    {inc.metadata?.timestamp
-                      ? new Date(inc.metadata.timestamp * 1000).toLocaleString()
-                      : '—'}
-                    {inc.metadata?.note && <span className={styles.noteSnip}> — {inc.metadata.note}</span>}
-                  </p>
+                  <span className={styles.hash}>{(inc.video_hash || '').slice(0, 20)}…</span>
+                  <span className={styles.date}>{date}</span>
+                </div>
+                <div className={styles.cardRight}>
+                  <span className={inc.blockchain_status === 'anchored' ? styles.tagGreen : styles.tagOrange}>
+                    {inc.blockchain_status === 'anchored' ? 'Anchored' : inc.blockchain_status || 'Pending'}
+                  </span>
+                  <span className={styles.chevron}>{open ? '▲' : '▼'}</span>
                 </div>
               </div>
-              <div className={styles.rowRight}>
-                <span className={`${styles.badge} ${inc.blockchain_status === 'anchored' ? styles.badgeGreen : styles.badgeOrange}`}>
-                  {inc.blockchain_status === 'anchored' ? 'ON-CHAIN' : 'PENDING'}
-                </span>
-                <span className={styles.chevron}>{expanded === i ? '▲' : '▼'}</span>
-              </div>
-            </div>
 
-            {/* Expanded detail */}
-            {expanded === i && (
-              <div className={styles.detail} onClick={e => e.stopPropagation()}>
-                <div className={styles.grid}>
-                  <Field label="Full SHA-256" value={inc.video_hash} mono />
-                  <Field label="TX Hash" value={inc.tx_hash || '—'} mono
-                    link={inc.tx_hash ? `https://amoy.polygonscan.com/tx/${inc.tx_hash}` : null} />
-                  <Field label="Vehicle" value={inc.metadata?.vehicle_number || '—'} />
-                  <Field label="GPS" value={inc.metadata?.lat ? `${inc.metadata.lat}, ${inc.metadata.lon}` : 'N/A'} mono />
-                  <Field label="Speed" value={inc.metadata?.speed_kmh ? `${inc.metadata.speed_kmh} km/h` : 'N/A'} />
-                  <Field label="Note" value={inc.metadata?.note || '—'} />
+              {open && (
+                <div className={styles.detail}>
+                  <Row label="Video Hash"    value={inc.video_hash} mono />
+                  <Row label="Vehicle"       value={inc.vehicle_number || inc.metadata?.vehicle_number} />
+                  <Row label="Duration"      value={inc.duration ? `${inc.duration}s` : '—'} />
+                  <Row label="Chunks"        value={inc.chunk_count ?? '—'} />
+                  <Row label="Location"      value={
+                    inc.metadata?.lat
+                      ? `${inc.metadata.lat}, ${inc.metadata.lon}`
+                      : inc.location_coords || '—'
+                  } />
+                  <Row label="Note"          value={inc.metadata?.note || '—'} />
+                  {inc.video_url && (
+                    <div className={styles.row}>
+                      <span className={styles.rowLabel}>Video</span>
+                      <a href={inc.video_url} target="_blank" rel="noreferrer" className={styles.link}>
+                        Open ↗
+                      </a>
+                    </div>
+                  )}
+                  {inc.tx_hash && (
+                    <div className={styles.row}>
+                      <span className={styles.rowLabel}>TX Hash</span>
+                      <a
+                        href={`https://amoy.polygonscan.com/tx/${inc.tx_hash}`}
+                        target="_blank" rel="noreferrer"
+                        className={styles.link}
+                      >
+                        {inc.tx_hash.slice(0, 20)}… ↗
+                      </a>
+                    </div>
+                  )}
+                  {inc.ai_analysis && (
+                    <>
+                      <div className={styles.divider}>CV Analysis</div>
+                      <Row label="Max Pedestrians" value={inc.ai_analysis.max_pedestrians_in_frame} />
+                      <Row label="Max Cars"        value={inc.ai_analysis.max_cars_in_frame} />
+                      <Row label="Collision Risk"  value={inc.ai_analysis.collision_risk_factor} />
+                    </>
+                  )}
                 </div>
-                {inc.video_url && (
-                  <a href={inc.video_url} target="_blank" rel="noreferrer" className={styles.videoLink}>
-                    View Video on Firebase ↗
-                  </a>
-                )}
-                <div className={styles.integrityNote}>
-                  <span className={styles.integrityIcon}>🔒</span>
-                  <span>Hash is anchored immutably on Polygon Amoy. Any modification to the video will produce a different SHA-256 hash, proving tampering.</span>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-function Field({ label, value, mono, link }) {
+function Row({ label, value, mono }) {
   return (
-    <div className={styles.field}>
-      <span className={styles.fieldLabel}>{label}</span>
-      {link
-        ? <a href={link} target="_blank" rel="noreferrer" className={`${styles.fieldVal} ${mono ? 'mono' : ''}`} style={{color:'var(--accent)'}}>
-            {value}
-          </a>
-        : <span className={`${styles.fieldVal} ${mono ? 'mono' : ''}`}>{value}</span>
-      }
+    <div className={styles.row}>
+      <span className={styles.rowLabel}>{label}</span>
+      <span className={`${styles.rowVal} ${mono ? styles.mono : ''}`}>{value ?? '—'}</span>
     </div>
   )
 }

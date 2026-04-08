@@ -1,13 +1,11 @@
-// src/api.js
-import axios from 'axios'
+import axios from 'axios';
 
 const api = axios.create({
-  // Updated with your active localtunnel URL
-  baseURL: 'https://common-dolls-cough.loca.lt/api', 
-  withCredentials: true,
+  baseURL: '/api',          // Vite proxy forwards /api → http://localhost:5001
+  withCredentials: true,    // Required for Flask session cookies
   headers: {
-    "Bypass-Tunnel-Reminder": "true" 
-  }
-})
+    'Content-Type': 'application/json',
+  },
+});
 
-export default api
+export default api;
