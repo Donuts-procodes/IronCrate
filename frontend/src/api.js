@@ -2,12 +2,9 @@
 import axios from 'axios'
 
 const api = axios.create({
-  // Updated with your active localtunnel URL
-  baseURL: 'https://common-dolls-cough.loca.lt/api', 
-  withCredentials: true,
-  headers: {
-    "Bypass-Tunnel-Reminder": "true" 
-  }
+  // Direct connection to your Flask backend
+  baseURL: 'http://localhost:5000/api', 
+  withCredentials: true
 })
 
 export default api

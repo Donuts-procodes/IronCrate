@@ -1,24 +1,23 @@
-"""
-IronCrate - Secure Dashcam Backend
-"""
 import os
 from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
 
-# Load environment variables
+# 1. LOAD DOTENV FIRST
 load_dotenv()
 
-# Initialize Flask
+# 2. NOW IMPORT ROUTES (after environment variables exist)
+from routes.auth import auth_bp
+from routes.incidents import incidents_bp
+
 app = Flask(__name__)
+# ... the rest of your app.py code
 app.secret_key = os.getenv("FLASK_SECRET", "super-secret-key")
 
 # Enable CORS for the React frontend
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
 
 # Register Blueprints (Routes)
-from routes.auth import auth_bp
-from routes.incidents import incidents_bp
 
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(incidents_bp, url_prefix="/api/incidents")

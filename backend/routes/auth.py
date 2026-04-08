@@ -1,50 +1,49 @@
-from flask import Blueprint, request, jsonify, session
+
 import pyrebase
 import os
-
+from config import db
+from flask import Blueprint, request, jsonify, session
+from config import db  # Ensure you've moved Firebase init to config.py
 auth_bp = Blueprint('auth', __name__)
 
+# Initialize Firebase Database
 # Initialize Firebase Database
 firebase_config = {
     "apiKey": os.getenv("FIREBASE_API_KEY"),
     "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN"),
-    "databaseURL": os.getenv("FIREBASE_DB_URL"),
-    "storageBucket": "ironcrate-75923.firebasestorage.app"
+    "databaseURL": os.getenv("FIREBASE_DATABASE_URL"),  # Changed from FIREBASE_DB_URL
+    "projectId": os.getenv("FIREBASE_PROJECT_ID"),      # Good practice to include this
+    "storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET") 
 }
-firebase = pyrebase.initialize_app(firebase_config)
-db = firebase.database()
-
 @auth_bp.post('/register')
 def register():
-    """Matches frontend: api.post('/auth/register', data)"""
     data = request.json
     
-    # Exact keys matching React's 'form' state
-    vehicle = data.get('vehicle_number')
-    owner = data.get('owner_name')
-    phone = data.get('phone')
+    # 1. MATCH THESE TO YOUR REACT STATE
+    # If your React code uses 'registration_number', use that here!
+    vehicle = data.get('registration_number') 
+    owner = data.get('owner_full_name')
+    phone = data.get('phone_number')
     
-    if not vehicle:
-        return jsonify({"error": "Vehicle number is required"}), 400
+    # 2. Updated Validation (Matching the error message in your screenshot)
+    if not vehicle or not owner:
+        return jsonify({"error": "Vehicle number and Owner name are required"}), 400
         
     try:
-        # Save to Firebase Realtime Database
+        # 3. Save to Firebase
         db.child("vehicles").child(vehicle).set({
             "owner_name": owner,
             "phone": phone,
             "status": "active"
         })
         
-        # Save user in Flask Session
         session['vehicle_number'] = vehicle
-        session['owner_name'] = owner
-        
-        # React expects a 'uid' back
         return jsonify({"message": "Registered", "uid": vehicle}), 201
         
     except Exception as e:
         print(f"DB Error: {e}")
         return jsonify({"error": "Failed to register vehicle"}), 500
+
 
 
 @auth_bp.post('/login')
